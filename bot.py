@@ -1,20 +1,33 @@
 from telegram import Update
-from telegram.ext import Application, MessageHandler, filters, CallbackContext
+from telegram.ext import Application, CommandHandler, CallbackContext
 
-# ضع التوكن الخاص بك هنا
+# ضع هنا التوكن الخاص بالبوت
 TOKEN = "7554502855:AAFR5_19Tjb2REX9vw80VHMos_bYJKH2iIc"
 
-async def handle_messages(update: Update, context: CallbackContext):
-    await update.message.reply_text("—")  # المسطرة بعد كل رسالة
+# دالة الترحيب عند استخدام /start
+async def start(update: Update, context: CallbackContext) -> None:
+    bot_username = context.bot.username  # جلب اسم البوت تلقائيًا
+    welcome_message = f"""أهلًا وسهلًا بك في بوت {bot_username} 🚀  
+الغريب للمسطرة —  
+يمكنك رفع البوت في مجموعتك وسأعمل على توفيرها بعد كل رسالة يتم إرسالها.  
 
+تم برمجة وتطوير البوت من قبل:  
+أحمد الغريب  
+
+حساباتي ↓ 
+📌 @quranbng  @quranfont  @Am9li9  
+"""
+    await update.message.reply_text(welcome_message)
+
+# إنشاء التطبيق وإضافة الأوامر
 def main():
-    # إنشاء التطبيق (بدلاً من Updater)
     app = Application.builder().token(TOKEN).build()
-
-    # إضافة معالج الرسائل
-    app.add_handler(MessageHandler(filters.ALL, handle_messages))
+    
+    # إضافة أمر /start
+    app.add_handler(CommandHandler("start", start))
 
     # تشغيل البوت
+    print("البوت يعمل الآن...")
     app.run_polling()
 
 if __name__ == "__main__":
