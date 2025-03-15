@@ -1,46 +1,19 @@
-import json
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, CallbackContext
 
 # ضع هنا التوكن الخاص بالبوت
 TOKEN = "7554502855:AAFR5_19Tjb2REX9vw80VHMos_bYJKH2iIc"
+ADMIN_ID = 634869382  # ضع هنا معرفك الشخصي
 
-# المعرف الخاص بك كمشرف
-ADMIN_ID = 634869382  # ضع هنا معرفك في تيليجرام
-
-# اسم ملف تخزين المستخدمين
-USER_DATA_FILE = "users.json"
-
-# تحميل المستخدمين من الملف عند بدء التشغيل
-def load_users():
-    try:
-        with open(USER_DATA_FILE, "r") as file:
-            return set(json.load(file))
-    except (FileNotFoundError, json.JSONDecodeError):
-        return set()
-
-# حفظ المستخدمين إلى الملف
-def save_users():
-    with open(USER_DATA_FILE, "w") as file:
-        json.dump(list(users), file)
-
-# قائمة المستخدمين
-users = load_users()
-
-# حالة البوت (تشغيل/إيقاف)
-bot_active = True
-
-# تفعيل/تعطيل المسطرة
-send_separator_enabled = True
+# متغير لتحديد ما إذا كانت إشعارات الدخول مفعلة أم لا
+notify_new_users = True
 
 # دالة الترحيب عند استخدام /start
 async def start(update: Update, context: CallbackContext) -> None:
-    user_id = update.effective_user.id
-    if user_id not in users:
-        users.add(user_id)
-        save_users()  # حفظ المستخدم الجديد
-
-    bot_username = context.bot.username  
+    bot_username = context.bot.username
+    keyboard = [[InlineKeyboardButton("📊 لوحة التحكم", callback_data="panel")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
     welcome_message = f"""أهلًا وسهلًا بك في بوت {bot_username} 🚀  
 الغريب للمسطرة —  
 يمكنك رفع البوت في مجموعتك وسأعمل على توفيرها بعد كل رسالة يتم إرسالها.  
@@ -48,98 +21,71 @@ async def start(update: Update, context: CallbackContext) -> None:
 تم برمجة وتطوير البوت من قبل:  
 أحمد الغريب  
 
-حساباتي ↓ 
-📌 @quranbng  @quranfont  @Am9li9  
+📌 حساباتي: @quranbng  @quranfont  @Am9li9  
 """
-    await update.message.reply_text(welcome_message)
+    await update.message.reply_text(welcome_message, reply_markup=reply_markup)
 
 # دالة إرسال المسطرة بعد كل رسالة
 async def send_separator(update: Update, context: CallbackContext) -> None:
-    if send_separator_enabled:
-        await update.message.reply_text("—")
+    await update.message.reply_text("—")
 
-# دالة عرض لوحة التحكم للمشرف
+# دالة لوحة التحكم
 async def panel(update: Update, context: CallbackContext) -> None:
-    if update.effective_user.id != ADMIN_ID:
+    query = update.callback_query
+    if query:
+        await query.answer()
+        user_id = query.from_user.id
+    else:
+        user_id = update.message.from_user.id
+
+    if user_id != ADMIN_ID:
         await update.message.reply_text("❌ ليس لديك صلاحية لاستخدام هذه الميزة.")
         return
 
+    status = "✅ مفعّل" if notify_new_users else "❌ معطّل"
     keyboard = [
-        [InlineKeyboardButton("📊 عرض عدد المستخدمين", callback_data="show_users")],
-        [InlineKeyboardButton("🛑 إيقاف البوت" if bot_active else "✅ تشغيل البوت", callback_data="toggle_bot")],
-        [InlineKeyboardButton("🔄 تعطيل المسطرة" if send_separator_enabled else "✅ تفعيل المسطرة", callback_data="toggle_separator")],
-        [InlineKeyboardButton("📢 إرسال رسالة جماعية", callback_data="broadcast")]
+        [InlineKeyboardButton(f"🔔 إشعارات الدخول: {status}", callback_data="toggle_notify")],
+        [InlineKeyboardButton("🔄 تحديث القائمة", callback_data="panel")]
     ]
-
     reply_markup = InlineKeyboardMarkup(keyboard)
-    await update.message.reply_text("🔧 **لوحة تحكم البوت**", reply_markup=reply_markup)
+    await update.message.reply_text("🔧 **لوحة التحكم**", reply_markup=reply_markup)
 
-# دالة التعامل مع أزرار لوحة التحكم
-async def button_handler(update: Update, context: CallbackContext) -> None:
-    global bot_active, send_separator_enabled
-
+# دالة تبديل حالة إشعارات الدخول
+async def toggle_notify(update: Update, context: CallbackContext) -> None:
+    global notify_new_users
     query = update.callback_query
-    user_id = query.from_user.id
-
-    if user_id != ADMIN_ID:
+    if query.from_user.id != ADMIN_ID:
         await query.answer("❌ ليس لديك صلاحية لاستخدام هذه الميزة.", show_alert=True)
         return
 
-    if query.data == "show_users":
-        await query.answer()
-        await query.message.reply_text(f"📊 عدد المستخدمين الذين استخدموا البوت: {len(users)}")
+    notify_new_users = not notify_new_users
+    await panel(update, context)
 
-    elif query.data == "toggle_bot":
-        bot_active = not bot_active
-        new_status = "✅ تم تشغيل البوت" if bot_active else "🛑 تم إيقاف البوت"
-        await query.answer(new_status, show_alert=True)
-        await query.message.edit_text(new_status)
-
-    elif query.data == "toggle_separator":
-        send_separator_enabled = not send_separator_enabled
-        new_status = "✅ تم تفعيل المسطرة" if send_separator_enabled else "❌ تم تعطيل المسطرة"
-        await query.answer(new_status, show_alert=True)
-        await query.message.edit_text(new_status)
-
-    elif query.data == "broadcast":
-        await query.answer()
-        await query.message.reply_text("✍️ أرسل الآن الرسالة التي تريد إرسالها لجميع المستخدمين.")
-        context.user_data["waiting_for_broadcast"] = True
-
-# دالة استقبال الرسائل الجماعية من المشرف
-async def broadcast_message(update: Update, context: CallbackContext) -> None:
-    if context.user_data.get("waiting_for_broadcast") and update.effective_user.id == ADMIN_ID:
-        message = update.message.text
-        context.user_data["waiting_for_broadcast"] = False
-
-        sent_count = 0
-        for user_id in users:
-            try:
-                await context.bot.send_message(chat_id=user_id, text=message)
-                sent_count += 1
-            except:
-                continue
-
-        await update.message.reply_text(f"📢 تم إرسال الرسالة إلى {sent_count} مستخدم.")
+# دالة إرسال إشعار عند دخول عضو جديد
+async def new_member(update: Update, context: CallbackContext) -> None:
+    global notify_new_users
+    if notify_new_users:
+        user = update.effective_user
+        user_info = f"""🚀 **عضو جديد في البوت!**  
+👤 الاسم: {user.full_name}  
+🔗 المعرف: @{user.username if user.username else 'لا يوجد'}  
+🆔 الايدي: `{user.id}`  
+👥 إجمالي المستخدمين: {context.bot_data.get('user_count', 0) + 1}"""
+        
+        await context.bot.send_message(chat_id=ADMIN_ID, text=user_info)
+    
+    context.bot_data['user_count'] = context.bot_data.get('user_count', 0) + 1
 
 # إنشاء التطبيق وإضافة الأوامر
 def main():
     app = Application.builder().token(TOKEN).build()
     
-    # أوامر البوت
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("panel", panel))  # لوحة التحكم
-
-    # استقبال الردود على الأزرار
-    app.add_handler(CallbackQueryHandler(button_handler))
-
-    # استقبال الرسائل النصية
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, broadcast_message))
-
-    # إضافة معالج للرسائل النصية العادية لتفعيل المسطرة
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, send_separator))
+    app.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, new_member))
+    app.add_handler(CallbackQueryHandler(panel, pattern="panel"))
+    app.add_handler(CallbackQueryHandler(toggle_notify, pattern="toggle_notify"))
 
-    # تشغيل البوت
     print("البوت يعمل الآن...")
     app.run_polling()
 
