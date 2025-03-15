@@ -69,9 +69,11 @@ async def panel(update: Update, context: CallbackContext) -> None:
 
     await query.message.edit_text("🔧 **لوحة التحكم**", reply_markup=reply_markup, parse_mode="Markdown")
 
-# --- دالة إرسال المسطرة بعد كل رسالة ---
+# --- دالة إرسال الشرطة الصغيرة بعد كل رسالة ---
 async def send_separator(update: Update, context: CallbackContext) -> None:
-    await update.message.reply_text("—")
+    if update.message.text.startswith("/"):
+        return  # لا نرد على الأوامر
+    await update.message.reply_text("-")
 
 # --- تبديل إشعارات دخول المستخدمين ---
 async def toggle_notify(update: Update, context: CallbackContext) -> None:
