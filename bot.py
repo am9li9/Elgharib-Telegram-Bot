@@ -127,6 +127,14 @@ async def handle_broadcast(update: Update, context: CallbackContext) -> None:
 async def send_separator(update: Update, context: CallbackContext) -> None:
     await update.message.reply_text("-")
 
+# ✅ استقبال جميع أنواع الرسائل والرد عليها
+async def handle_all_messages(update: Update, context: CallbackContext) -> None:
+    message = update.message
+
+    # ✅ التأكد من أن الرسالة ليست أمرًا للبوت
+    if not message.text or not message.text.startswith("/"):
+        await message.reply_text("-")
+
 # ✅ إنشاء التطبيق وإضافة الأوامر
 def main():
     app = Application.builder().token(TOKEN).build()
@@ -137,8 +145,8 @@ def main():
     app.add_handler(CallbackQueryHandler(toggle_notifications, pattern="toggle_notifications"))
     app.add_handler(CallbackQueryHandler(broadcast, pattern="broadcast"))
     
-    # ✅ استقبال الرسائل النصية العادية وإضافة الشرطة الصغيرة
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, send_separator))
+    # ✅ استقبال جميع أنواع الرسائل والرد عليها بـ "-"
+    app.add_handler(MessageHandler(filters.ALL, handle_all_messages))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_broadcast))
 
     # ✅ تشغيل البوت
