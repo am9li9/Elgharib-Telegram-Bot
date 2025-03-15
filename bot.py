@@ -6,7 +6,7 @@ from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQu
 TOKEN = "7554502855:AAFR5_19Tjb2REX9vw80VHMos_bYJKH2iIc"
 
 # المعرف الخاص بك كمشرف
-ADMIN_ID = 123456789  # ضع هنا معرفك في تيليجرام
+ADMIN_ID = 634869382  # ضع هنا معرفك في تيليجرام
 
 # اسم ملف تخزين المستخدمين
 USER_DATA_FILE = "users.json"
